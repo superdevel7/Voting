@@ -20,6 +20,7 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+coverage.json
 *.lcov
 
 # nyc test coverage
@@ -102,3 +103,9 @@ dist
 
 # TernJS port file
 .tern-port
+
+typechain
+
+# Hardhat files
+cache
+artifacts
