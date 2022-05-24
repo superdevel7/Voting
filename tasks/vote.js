@@ -43,17 +43,32 @@ task("end-voting", "End a voting")
   .addParam("voteid", "Index of Vote")
   .addParam("participant", "The private key of the participant")
   .setAction(async function (taskArguments, hre) {
-  const contract = await getContractByKey("Voting", taskArguments.participant, hre);
+    const contract = await getContractByKey("Voting", taskArguments.participant, hre);
 
-  const tx = await contract.endVoting(
-    taskArguments.voteid,
-    {
-      gasLimit: 500_000,
-    }
-  );
+    const tx = await contract.endVoting(
+      taskArguments.voteid,
+      {
+        gasLimit: 500_000,
+      }
+    );
 
-  console.log(tx);
-});
+    console.log(tx);
+  });
+
+task("withdraw", "Withdraw the commission")
+  .addParam("payee", "Payee address")
+  .setAction(async function (taskArguments, hre) {
+    const contract = await getContract("Voting", hre);
+
+    const tx = await contract.WithdrawCommission(
+      taskArguments.payee,
+      {
+        gasLimit: 500_000,
+      }
+    );
+    
+    console.log(tx);
+  });
 
 task("get-vote-candidates", "Get candidates of the vote")
   .addParam("voteid", "Index of Vote")
@@ -95,20 +110,6 @@ task("get-vote-participants", "Get participants of the vote")
     console.log(tx);
   });
 
-task("get-vote-endtime", "Get the ending time of the vote")
-  .addParam("voteid", "Index of Vote")
-  .setAction(async function (taskArguments, hre) {
-    const contract = await getContract("Voting", hre);
-
-    const tx = await contract.getVoteEndTime(
-      taskArguments.voteid,
-      {
-        gasLimit: 500_000,
-      }
-    );
-    console.log(tx);
-  });
-
 task("get-voted-candidate", "Get the candidate that the participant voted")
   .addParam("voteid", "Index of Vote")
   .addParam("participant", "The voted participant")
@@ -118,6 +119,32 @@ task("get-voted-candidate", "Get the candidate that the participant voted")
     const tx = await contract.getVotedCandidateByParticipant(
       taskArguments.voteid,
       taskArguments.participant,
+      {
+        gasLimit: 500_000,
+      }
+    );
+    console.log(tx);
+  });
+
+task("get-commission", "Get current commission")
+  .setAction(async function (taskArguments, hre) {
+    const contract = await getContract("Voting", hre);
+
+    const tx = await contract.getCurrentCommission(
+      {
+        gasLimit: 500_000,
+      }
+    );
+    console.log(tx);
+  });
+
+task("get-winner", "Get the winner of the vote")
+  .addParam("voteid", "Index of Vote")
+  .setAction(async function (taskArguments, hre) {
+    const contract = await getContract("Voting", hre);
+
+    const tx = await contract.getCurrentCommission(
+      taskArguments.voteid,
       {
         gasLimit: 500_000,
       }

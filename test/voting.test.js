@@ -75,23 +75,23 @@ const createTestSuite = ({ contract, constructorArgs }) =>
             var exp = ethers.BigNumber.from("10").pow(15);
             const ethValue = ethers.BigNumber.from("10").mul(exp); // 0.01 ether
 
-            this.participateVoteTx1 = await this.voting.connect(this.addr3).participateVote(0, this.addr1.address, { value: ethValue });
-            this.participateVoteTx2 = await this.voting.connect(this.addr4).participateVote(0, this.addr2.address, { value: ethValue });
-            this.participateVoteTx3 = await this.voting.connect(this.addr5).participateVote(0, this.addr1.address, { value: ethValue });
+            this.participateVoteTx1 = await this.voting.connect(this.addr3).participateVote(0, this.addr2.address, { value: ethValue });
+            this.participateVoteTx2 = await this.voting.connect(this.addr4).participateVote(0, this.addr1.address, { value: ethValue });
+            this.participateVoteTx3 = await this.voting.connect(this.addr5).participateVote(0, this.addr2.address, { value: ethValue });
           });
 
           it("participate vote event", async function() {
             await expect(this.participateVoteTx1)
               .to.emit(this.voting, "VoteParticipated")
-              .withArgs(0, this.addr1.address);
+              .withArgs(0, this.addr2.address);
 
             await expect(this.participateVoteTx2)
               .to.emit(this.voting, "VoteParticipated")
-              .withArgs(0, this.addr2.address);
+              .withArgs(0, this.addr1.address);
 
             await expect(this.participateVoteTx3)
               .to.emit(this.voting, "VoteParticipated")
-              .withArgs(0, this.addr1.address);
+              .withArgs(0, this.addr2.address);
           });
 
           describe("revert test", async function() {
@@ -129,11 +129,28 @@ const createTestSuite = ({ contract, constructorArgs }) =>
           });
 
           it("vote0 participants: addr3, addr4, addr5", async function() {
+            await expect(
+              this.voting.getParticipants(1)
+            ).to.be.revertedWith("Invalid vote id");
             const participants = await this.voting.getParticipants(0);
             expect(participants).to.deep.equal([this.addr3.address, this.addr4.address, this.addr5.address]);
           });
 
+          it("get voted candidate by participant addr3", async function() {
+            await expect(
+              this.voting.getVotedCandidateByParticipant(1, this.addr3.address)
+            ).to.be.revertedWith("Invalid vote id");
+            await expect(
+              this.voting.getVotedCandidateByParticipant(0, this.addr6.address)
+            ).to.be.revertedWith("This participant did not vote yet.");
+            const votedCandidate = await this.voting.getVotedCandidateByParticipant(0, this.addr3.address);
+            expect(votedCandidate).to.equal(this.addr2.address);
+          });
+
           it("end vote revert test", async function() {
+            await expect(
+              this.voting.connect(this.addr3).endVoting(1)
+            ).to.be.revertedWith("Invalid vote id");
             await expect(
               this.voting.connect(this.addr3).endVoting(0)
             ).to.be.revertedWith("You can close voting after 3 days");
@@ -142,6 +159,12 @@ const createTestSuite = ({ contract, constructorArgs }) =>
           it("commission test", async function() {
             const currentCommission = await this.voting.getCurrentCommission();
             expect(currentCommission).to.equal(0);
+          });
+
+          it("get winner error", async function() {
+            await expect(
+              this.voting.getWinner(0)
+            ).to.be.revertedWith("Voting process is not closed");
           });
 
           context("end vote", async function() {
@@ -154,12 +177,15 @@ const createTestSuite = ({ contract, constructorArgs }) =>
             it("end vote event", async function() {
               await expect(this.endVoteTx)
                 .to.emit(this.voting, "VoteWinner")
-                .withArgs(0, this.addr1.address);
+                .withArgs(0, this.addr2.address);
             });
   
             it("winner test", async function() {
+              await expect(
+                this.voting.getWinner(1)
+              ).to.be.revertedWith("Invalid vote id");
               const winner = await this.voting.getWinner(0);
-              expect(winner).to.equal(this.addr1.address);
+              expect(winner).to.equal(this.addr2.address);
             });
   
             it("commission test", async function() {
@@ -169,6 +195,20 @@ const createTestSuite = ({ contract, constructorArgs }) =>
               const expectedCommission = expectedTotalAmount.div(10); // 10 %
               const currentCommission = await this.voting.getCurrentCommission();
               expect(currentCommission).to.equal(expectedCommission);
+            });
+
+            it("end vote again error", async function() {
+              await expect(
+                this.voting.connect(this.addr3).endVoting(0)
+              ).to.be.revertedWith("Already closed");
+            });
+
+            it("participate to the ended vote error", async function() {
+              var exp = ethers.BigNumber.from("10").pow(15);
+              const ethValue = ethers.BigNumber.from("10").mul(exp); // 0.01 ether
+              await expect(
+                this.voting.participateVote(0, this.addr1.address, { value: ethValue })
+              ).to.be.revertedWith("Voting process is closed");
             });
 
             context("withdraw commission", async function() {
@@ -183,6 +223,33 @@ const createTestSuite = ({ contract, constructorArgs }) =>
                   .to.emit(this.voting, "WithdrawCommission")
                   .withArgs(this.addr6.address, expectedCommission);
               });
+            });
+          });
+        });
+
+        context("create another vote", async function() {
+          beforeEach(async function() {
+            this.createAnotherVoteTx = await this.voting.createVoting([this.addr1.address, this.addr2.address, this.addr3.address]);
+          });
+
+          describe("check status", async function() {
+            it("create vote event", async function() {
+              await expect(this.createAnotherVoteTx)
+                .to.emit(this.voting, "VotingCreated")
+                .withArgs(1, [this.addr1.address, this.addr2.address, this.addr3.address]);
+            });
+  
+            it("has 2 votes", async function() {
+              const numberOfVotes = await this.voting.getNumberOfVotes();
+              expect(numberOfVotes).to.equal(2);
+            });
+  
+            it("vote1 candidates: addr1, addr2, addr3", async function() {
+              await expect(
+                this.voting.getVoteCandidates(2)
+              ).to.be.revertedWith("Invalid vote id");
+              const candidates = await this.voting.getVoteCandidates(1);
+              expect(candidates).to.deep.equal([this.addr1.address, this.addr2.address, this.addr3.address]);
             });
           });
         });

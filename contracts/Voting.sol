@@ -50,15 +50,6 @@ contract Voting is Ownable {
     return currentVoteId.current();
   }
 
-  function getVoteEndTime(uint256 voteId)
-    public
-    view
-    returns (uint256)
-  {
-    require(voteId < currentVoteId.current(), "Invalid vote id");
-    return votes[voteId].endTime;
-  }
-
   function getParticipants(uint256 voteId)
     public
     view
