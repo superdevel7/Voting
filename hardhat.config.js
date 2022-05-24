@@ -10,6 +10,7 @@ if (process.env.REPORT_COVERAGE) {
   require("solidity-coverage");
 }
 
+require("./scripts");
 require("./tasks");
 
 module.exports = {

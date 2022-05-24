@@ -12,13 +12,6 @@ function getEnvVariable(key, defaultValue) {
   return defaultValue;
 }
 
-function getPrivKey(privKey) {
-  if (privKey) {
-    return privKey;
-  }
-  return getEnvVariable("ACCOUNT_PRIVATE_KEY");
-}
-
 // Helper method for fetching a connection provider to the Ethereum network
 function getProvider() {
   const network = getEnvVariable("NETWORK", "rinkeby");
@@ -35,35 +28,16 @@ function getProvider() {
 }
 
 // Helper method for fetching a wallet account using an environment variable for the PK
-function getOwnerAccount() {
+function getAccount() {
   return new ethers.Wallet(
     getEnvVariable("ACCOUNT_PRIVATE_KEY"),
     getProvider()
   );
 }
 
-// Helper method for fetching a wallet account using private key
-function getAccount(privKey) {
-  return new ethers.Wallet(
-    getPrivKey(privKey),
-    getProvider()
-  );
-}
-
 // Helper method for fetching a contract instance at a given address
 function getContract(contractName, hre) {
-  const account = getOwnerAccount();
-  return getContractAt(
-    hre,
-    contractName,
-    getEnvVariable("CONTRACT_ADDRESS"),
-    account
-  );
-}
-
-// Helper method for fetching a contract instance by private key
-function getContractByKey(contractName, privKey, hre) {
-  const account = getAccount(privKey);
+  const account = getAccount();
   return getContractAt(
     hre,
     contractName,
@@ -74,10 +48,7 @@ function getContractByKey(contractName, privKey, hre) {
 
 module.exports = {
   getEnvVariable,
-  getPrivKey,
   getProvider,
   getAccount,
-  getOwnerAccount,
   getContract,
-  getContractByKey,
 };

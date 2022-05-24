@@ -1,2 +1,1 @@
-require("./deploy");
 require("./vote");
